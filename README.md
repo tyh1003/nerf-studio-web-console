@@ -417,6 +417,8 @@ https://xxxxxxxx.ngrok-free.app
 
 實際 GPU 運算仍在主機端執行。
 
+<img width="922" height="758" alt="image" src="https://github.com/user-attachments/assets/c45ce96a-4124-47cd-847a-2a3ba706e3c1" />
+
 ---
 
 # ngrok 架構
@@ -447,33 +449,3 @@ Local NVIDIA GPU
 外部使用者就能持續使用系統。
 
 
----
-
-# 開發狀態
-
-目前此專案主要作為 NeRF Web Training 與 Point Cloud Visualization 的研究型系統。
-
-目前已整合：
-
-```text
-Flask
-COLMAP
-Nerfstudio
-Nerfacto
-Open3D
-LAS / LAZ
-Potree
-ngrok
-```
-
-後續可擴充：
-
-* 多使用者帳號
-* GPU Job Queue
-* 使用者訓練配額
-* 任務刪除
-* 任務暫停
-* 儲存空間管理
-* 自動移除舊資料
-* 更完整的點雲裁切控制
-* 更多 Nerfstudio 參數
