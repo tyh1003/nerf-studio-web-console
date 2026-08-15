@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NeRF Studio 控制台</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+  <style>
+    body {
+      background: radial-gradient(circle at top, #05070c 0%, #000 100%);
+      color: #ffffff;
+      font-family: 'Orbitron', '微軟正黑體', sans-serif;
+      letter-spacing: 0.5px;
+    }
+
+    h1, h4, h5 {
+      color: #00bfff;
+      text-shadow: 0 0 10px rgba(0,191,255,0.6);
+      font-weight: 700;
+    }
+
+    .card {
+      background: rgba(15, 25, 35, 0.85);
+      border: 1px solid rgba(0,191,255,0.3);
+      border-radius: 16px;
+      box-shadow: 0 0 20px rgba(0,191,255,0.15);
+      backdrop-filter: blur(8px);
+      color: #fff;
+    }
+
+    .form-control, .form-select {
+      background: #0a1622;
+      color: #fff;
+      border: 1px solid #1e90ff;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #007bff, #00d4ff);
+      border: none;
+      color: white;
+      box-shadow: 0 0 12px rgba(0,191,255,0.4);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 25px rgba(0,191,255,0.8);
+      transform: scale(1.02);
+    }
+
+    #log-container {
+      background: #0a1622;
+      color: #c9eaff;
+      font-family: monospace;
+      font-size: 13px;
+      padding: 0.8em;
+      height: 220px;
+      border-radius: 10px;
+      overflow-y: auto;
+      border: 1px solid #1e3b5c;
+      box-shadow: inset 0 0 20px rgba(0,191,255,0.1);
+    }
+
+    #progress-bar {
+      background: linear-gradient(90deg, #00bfff, #0044ff);
+      text-shadow: 0 0 6px #000;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    /* 🌌 Potree 視窗樣式 */
+    #potree-panel {
+      display: none;
+      margin-top: 20px;
+    }
+
+    #potree-frame {
+      width: 100%;
+      height: 600px;
+      border-radius: 10px;
+      border: 1px solid #00bfff;
+      box-shadow: 0 0 30px rgba(0,191,255,0.3);
+      background: #000;
+    }
+
+    .neon-divider {
+      border: none;
+      border-top: 1px solid rgba(0,191,255,0.3);
+      margin: 2rem 0;
+    }
+
+    /* 📉 壓縮任務狀態 */
+    #progress-container {
+      height: 18px !important;
+    }
+
+    h5 span#status-text {
+      font-size: 15px;
+      color: #64b5ff;
+    }
+
+    h5 {
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4">
+    <h1 class="text-center mb-5">NeRF Studio 控制台</h1>
+
+    <!-- 🧠 新任務訓練 -->
+    <div class="card mb-4 p-4">
+      <h4>新任務訓練</h4>
+      <form action="/upload" method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label for="project_name" class="form-label">專案名稱：</label>
+          <input type="text" class="form-control" id="project_name" name="project_name" value="my-nerf-project" />
+        </div>
+
+        <div class="mb-3">
+          <label for="images" class="form-label">選擇圖片（可多選）：</label>
+          <input type="file" class="form-control" id="images" name="images" multiple required />
+        </div>
+
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="enable_advanced" name="enable_advanced" />
+          <label class="form-check-label" for="enable_advanced">啟用高級模式</label>
+        </div>
+
+        <div id="advanced-section" style="display:none;">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="max_iter" class="form-label">最大迭代次數：</label>
+              <input type="number" class="form-control" id="max_iter" name="max_iter" value="5000" />
+            </div>
+            <div class="col-md-6">
+              <label for="background_color" class="form-label">背景顏色：</label>
+              <select id="background_color" name="background_color" class="form-select">
+                <option value="white">白色</option>
+                <option value="black">黑色</option>
+                <option value="random">隨機</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">開始訓練</button>
+      </form>
+    </div>
+
+    <hr class="neon-divider">
+
+    <!-- 📂 載入訓練完成點雲 -->
+    <div class="card mb-4 p-4">
+      <h4>📂 載入訓練完成的點雲</h4>
+      <form action="/load_project" method="post">
+        <div class="input-group">
+          <select id="selected_project" name="selected_project" class="form-select" required>
+            <option value="">-- 選擇已訓練的專案 --</option>
+            {% for p in existing_projects %}
+              <option value="{{ p.name }}">{{ p.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-info">開啟 3D 點雲瀏覽器</button>
+        </div>
+      </form>
+    </div>
+
+    {% if job_id %}
+    <hr class="neon-divider">
+
+    <!-- ⚙️ 任務狀態 + Potree 3D 瀏覽器 -->
+    <div class="card mb-4 p-4">
+      <h4>任務狀態</h4>
+
+      <div id="progress-container" class="progress mb-3" style="display:none;">
+        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%">0%</div>
+      </div>
+
+      <h5>狀態：<span id="status-text">載入中...</span></h5>
+
+      <div id="log-container">載入日誌中...</div>
+
+      <div id="potree-panel">
+        <h5 class="mt-4">🌌 3D 點雲瀏覽器 (Potree)</h5>
+        <iframe id="potree-frame" allowfullscreen></iframe>
+        <div class="text-end mt-2">
+          <a id="potree-open-btn" href="#" target="_blank" class="btn btn-sm btn-outline-info">🔍 在新分頁開啟</a>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const jobID = "{{ job_id }}";
+      const statusText = document.getElementById('status-text');
+      const logContainer = document.getElementById('log-container');
+      const progressBar = document.getElementById('progress-bar');
+      const progressContainer = document.getElementById('progress-container');
+      const potreePanel = document.getElementById('potree-panel');
+      const potreeFrame = document.getElementById('potree-frame');
+      const potreeOpenBtn = document.getElementById('potree-open-btn');
+      let potreeLoaded = false;
+
+      function updateStatus() {
+        fetch(`/status/${jobID}`)
+          .then(r => r.json())
+          .then(data => {
+            statusText.textContent = data.status || '未知';
+            logContainer.textContent = data.log_content || '';
+            logContainer.scrollTop = logContainer.scrollHeight;
+
+            const p = Number(data.progress || 0);
+            if (!isNaN(p)) {
+              progressContainer.style.display = 'block';
+              progressBar.style.width = p + '%';
+              progressBar.textContent = p.toFixed(1) + '%';
+            }
+
+            if (data.potree_url && !potreeLoaded) {
+              potreeLoaded = true;
+              potreePanel.style.display = 'block';
+              potreeFrame.src = data.potree_url;
+              potreeOpenBtn.href = data.potree_url;
+            }
+
+            if ((data.status || '').includes('完成') || (data.status || '').includes('錯誤')) {
+              clearInterval(intervalID);
+            }
+          })
+          .catch(() => {
+            statusText.textContent = '⚠️ 與伺服器連線中斷';
+            clearInterval(intervalID);
+          });
+      }
+
+      const intervalID = setInterval(updateStatus, 4000);
+      updateStatus();
+    </script>
+    {% endif %}
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const advCheckbox = document.getElementById('enable_advanced');
+      const advSection = document.getElementById('advanced-section');
+      if (advCheckbox && advSection) {
+        const sync = () => advSection.style.display = advCheckbox.checked ? 'block' : 'none';
+        advCheckbox.addEventListener('change', sync);
+        sync();
+      }
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
